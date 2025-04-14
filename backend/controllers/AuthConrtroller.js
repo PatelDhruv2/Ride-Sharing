@@ -2,6 +2,8 @@ import prisma from '../config/db.config.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {generateOtp,sendOtp } from '../utils/sendOtp.js';
+import { generateToken, tokenVerify } from '../utils/jwtToken.js';
+import { sendPasswordResetEmail } from '../utils/emailService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -167,6 +169,99 @@ export const verifyOtp = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update verification status' });
+  }
+};
+
+/**
+ * Handle forgot password request
+ * Generates a reset token and sends email
+ */
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // Find user
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate reset token with user info and purpose
+    const resetToken = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      purpose: 'password-reset'
+    }, '1h'); // Token expires in 1 hour
+
+    // Send password reset email
+    const emailResult = await sendPasswordResetEmail(
+      user.email,
+      user.name,
+      resetToken
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to send password reset email:', emailResult.error);
+      return res.status(500).json({ message: "Failed to send password reset email" });
+    }
+
+    // Don't return the token in the response for security
+    return res.status(200).json({ 
+      message: "Password reset instructions sent to your email",
+      status: 'success'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: "Error processing password reset request" });
+  }
+};
+
+/**
+ * Reset user password
+ * Validates token and updates password
+ */
+export const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token and password are required" });
+  }
+
+  try {
+    // Verify token
+    const decoded = tokenVerify(token);
+    
+    // Handle specific failure cases
+    if (!decoded) {
+      return res.status(400).json({ message: "Token is invalid or has expired" });
+    }
+    
+    if (decoded.purpose !== 'password-reset') {
+      return res.status(400).json({ message: "Invalid token purpose" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: decoded.id },
+      data: { password: hashedPassword }
+    });
+
+    return res.status(200).json({ 
+      message: "Password reset successfully",
+      status: 'success'
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    return res.status(500).json({ message: "Error resetting password" });
   }
 };
 

@@ -44,9 +44,10 @@ import {
 } from '@mui/icons-material';
 import Image from 'next/image';
 import axios from 'axios';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading, getAuthHeader, logout } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [pendingRides, setPendingRides] = useState([]);
   const [showPendingRides, setShowPendingRides] = useState(false);
@@ -54,6 +55,9 @@ export default function Dashboard() {
   const [approvedRides, setApprovedRides] = useState([]);
   const [showApprovedRides, setShowApprovedRides] = useState(false);
   const [approvedRidesLoading, setApprovedRidesLoading] = useState(false);
+  const [completedRides, setCompletedRides] = useState([]);
+  const [showCompletedRides, setShowCompletedRides] = useState(false);
+  const [completedRidesLoading, setCompletedRidesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('departureTime');
@@ -63,26 +67,17 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      router.push('/Signin');
-    } else {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        setUser(JSON.parse(userData));
-      }
+    if (user) {
       fetchBookings();
     }
-  }, [router]);
+  }, [user]);
 
   const fetchBookings = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await axios.get("http://localhost:5000/bookings", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
-        }
+        headers: getAuthHeader()
       });
       
       setBookings(response.data.bookings || []);
@@ -93,15 +88,15 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-  //const user = JSON.parse(localStorage.getItem("user"));
+
   const fetchPendingRides = async () => {
+    if (!user) return;
+    
     setPendingRidesLoading(true);
     setError(null);
     try {
-      const response = await axios.post("http://localhost:5000/pendingRides",{user}, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
-        }
+      const response = await axios.post("http://localhost:5000/pendingRides", {user}, {
+        headers: getAuthHeader()
       });
       
       console.log("API Response:", response.data); // Debug the response
@@ -119,13 +114,13 @@ export default function Dashboard() {
   };
 
   const fetchApprovedRides = async () => {
+    if (!user) return;
+    
     setApprovedRidesLoading(true);
     setError(null);
     try {
-      const response = await axios.post("http://localhost:5000/approvedRides",{user}, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
-        }
+      const response = await axios.post("http://localhost:5000/approvedRides", {user}, {
+        headers: getAuthHeader()
       });
       
       console.log("Approved Rides API Response:", response.data);
@@ -141,24 +136,52 @@ export default function Dashboard() {
     }
   };
 
+  const fetchCompletedRides = async () => {
+    if (!user) return;
+    
+    setCompletedRidesLoading(true);
+    setError(null);
+    try {
+      const response = await axios.post("http://localhost:5000/completedRides", {user}, {
+        headers: getAuthHeader()
+      });
+      
+      console.log("Completed Rides API Response:", response.data);
+      
+      setCompletedRides(response.data.completedRides || []);
+      setShowCompletedRides(true);
+      setShowApprovedRides(false);
+      setShowPendingRides(false);
+    } catch (error) {
+      console.error('Error fetching completed rides:', error);
+      setError('Failed to load completed rides. Please try again.');
+    } finally {
+      setCompletedRidesLoading(false);
+    }
+  };
+
   const handleShowApprovedRides = () => {
     fetchApprovedRides();
+  };
+
+  const handleShowCompletedRides = () => {
+    fetchCompletedRides();
   };
 
   const handleBackToBookings = () => {
     setShowPendingRides(false);
     setShowApprovedRides(false);
+    setShowCompletedRides(false);
   };
 
   const handleShowBookings = () => {
     setShowPendingRides(false);
     setShowApprovedRides(false);
+    setShowCompletedRides(false);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('user');
-    router.push('/Signin');
+    logout();
   };
 
   const handleBookRide = (rideId) => {
@@ -239,12 +262,12 @@ export default function Dashboard() {
     });
   };
 
-  if (loading && !user) {
+  if (authLoading || loading) {
     return (
       <Box sx={{ bgcolor: '#f5f7fa', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="lg">
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-            <Typography variant="h6" color="textSecondary">Loading...</Typography>
+            <CircularProgress />
           </Box>
         </Container>
       </Box>
@@ -315,10 +338,10 @@ export default function Dashboard() {
 
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
-            {showPendingRides ? "Pending Rides" : showApprovedRides ? "Approved Rides" : "Your Bookings"}
+            {showPendingRides ? "Pending Rides" : showApprovedRides ? "Approved Rides" : showCompletedRides ? "Completed Rides" : "Your Bookings"}
           </Typography>
           <Box display="flex" gap={1}>
-            {showPendingRides || showApprovedRides ? (
+            {showPendingRides || showApprovedRides || showCompletedRides ? (
               <Button
                 variant="contained"
                 color="primary"
@@ -344,6 +367,14 @@ export default function Dashboard() {
                   startIcon={<Star />}
                 >
                   Show Approved Rides
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleShowCompletedRides}
+                  startIcon={<History />}
+                >
+                  Show Completed Rides
                 </Button>
               </>
             )}
@@ -723,6 +754,102 @@ export default function Dashboard() {
               </Typography>
               <Typography variant="body2" color="textSecondary" paragraph>
                 There are no approved rides available at the moment.
+              </Typography>
+            </Paper>
+          )
+        ) : showCompletedRides ? (
+          completedRidesLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+              <CircularProgress />
+            </Box>
+          ) : completedRides.length > 0 ? (
+            <Grid container spacing={3}>
+              {completedRides.map((ride) => (
+                <Grid item xs={12} sm={6} md={4} key={ride.id}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 20px rgba(0,0,0,0.1)',
+                      },
+                      position: 'relative',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: 8,
+                        width: '100%',
+                        bgcolor: (theme) => theme.palette.info.main,
+                      }}
+                    />
+                    <CardContent sx={{ pt: 2 }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                        <Chip
+                          label="Completed"
+                          color="info"
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </Box>
+
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        {ride.startLocation} → {ride.endLocation}
+                      </Typography>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <AccessTime fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {formatDate(ride.departureTime)}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <DirectionsCar fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {ride.carModel || "Car"} ({ride.carColor || "N/A"})
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <EventSeat fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {ride.availableSeats} seat{ride.availableSeats !== 1 ? 's' : ''} available
+                        </Typography>
+                      </Box>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" fontWeight="bold" color="primary">
+                          ${ride.price}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                bgcolor: 'white',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No completed rides found
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                There are no completed rides available at the moment.
               </Typography>
             </Paper>
           )

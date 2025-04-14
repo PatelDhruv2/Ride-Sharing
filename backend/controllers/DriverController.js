@@ -168,3 +168,63 @@ export const getDriverApprovedRides = async (req, res) => {
     });
   }
 };
+
+export const getDriverCompletedRides = async (req, res) => {
+  try {
+    // Get driver ID from authenticated user
+    const {user} = req.body;
+    const driverId = user.id;
+    
+    // Get all completed rides given by the driver
+    const rides = await prisma.rideGiven.findMany({
+      where: {
+        driverId,
+        status: "COMPLETED"
+      },
+      include: {
+        bookings: {
+          include: {
+            passenger: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            baggage: true,
+          },
+        },
+      },
+    });
+    
+    // Transform the data to include all necessary information
+    const completedRides = rides.flatMap(ride => 
+      ride.bookings.map(booking => ({
+        id: ride.id,
+        startLocation: ride.startLocation,
+        endLocation: ride.endLocation,
+        departureTime: ride.departureTime,
+        bookingId: booking.id,
+        passenger: booking.passenger,
+        price: booking.fare,
+        status: booking.status,
+        availableSeats: ride.availableSeats,
+        carModel: ride.carModel,
+        carColor: ride.carColor,
+        distance: ride.distance
+      }))
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: "Completed rides retrieved successfully",
+      completedRides
+    });
+  } catch (error) {
+    console.error('Error fetching driver completed rides:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch driver completed rides',
+    });
+  }
+};

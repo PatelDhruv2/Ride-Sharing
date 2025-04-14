@@ -1,7 +1,7 @@
 import { Router } from 'express';
 const router = Router();
 
-import { register, login, sendOtpToUser, verifyOtp } from '../controllers/AuthConrtroller.js';
+import { register, login, sendOtpToUser, verifyOtp, forgotPassword, resetPassword } from '../controllers/AuthConrtroller.js';
 import { authenticate } from '../middleware/auth.js';
 
 import { getAllRides } from '../controllers/CreateRide.js';
@@ -16,13 +16,17 @@ import {
   deleteBooking
 } from '../controllers/Booking.js';
 
-import {  approveRideRequest, getDriverBookings,getDriverApprovedRides } from '../controllers/DriverController.js';
-import { getApprovedRides, getPendingRequests } from '../controllers/passengerController.js';
+import {  approveRideRequest, getDriverBookings,getDriverApprovedRides, getDriverCompletedRides } from '../controllers/DriverController.js';
+import { getApprovedRides, getPendingRequests, getCompletedRides } from '../controllers/passengerController.js';
 
 // 🔐 Auth Routes
 
 router.post('/register', register);
 router.post('/login', login);
+
+// Password Reset Routes
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // OTP Routes
 router.post('/send-otp', sendOtpToUser);
@@ -38,6 +42,7 @@ router.post('/driver/bookings', authenticate, getDriverBookings); //
 router.patch('/bookings/:id',authenticate,approveRideRequest);
 // router.get('/driverRides',authenticate,driverRides);
 router.post('/driverApprovedRides',authenticate,getDriverApprovedRides); //
+router.post('/driverCompletedRides',authenticate,getDriverCompletedRides); // New route for driver completed rides
 
 // 📦 Booking Routes
 router.post('/bookings/:rideId', createBooking);
@@ -49,5 +54,6 @@ router.delete('/bookings/:id', authenticate, deleteBooking);
 /// Passenger Routes
 router.post('/pendingRides',authenticate,getPendingRequests); //
 router.post('/approvedRides',authenticate , getApprovedRides); //
+router.post('/completedRides',authenticate, getCompletedRides); // New route for passenger completed rides
 
 export default router;

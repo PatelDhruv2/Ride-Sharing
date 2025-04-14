@@ -266,7 +266,7 @@ const LoginPage = () => {
                   Password
                 </label>
                 <a
-                  href="#"
+                  href="/forgot-password"
                   style={{
                     fontSize: "0.75rem",
                     color: "#4f46e5",

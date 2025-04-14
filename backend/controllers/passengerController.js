@@ -104,3 +104,64 @@ export const getApprovedRides = async (req, res) => {
     });
   }
 }
+
+export const getCompletedRides = async (req, res) => {
+  try {
+    // Get passenger ID from authenticated user
+    const {user} = req.body;
+    const passengerId = user.id;
+    
+    // Find completed bookings for this specific passenger
+    const completedRides = await prisma.booking.findMany({
+      where: {
+        passengerId,
+        status: "COMPLETED"
+      },
+      include: {
+        ride: true,
+        passenger: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // Check if any rides were found
+    if (completedRides.length === 0) {
+      return res.status(200).json({
+        message: "No completed rides found",
+        completedRides: []
+      });
+    }
+
+    // Transform the data to match the expected format in the frontend
+    const formattedRides = completedRides.map(booking => {
+      return {
+        id: booking.ride.id,
+        startLocation: booking.ride.startLocation,
+        endLocation: booking.ride.endLocation,
+        departureTime: booking.ride.departureTime,
+        price: booking.fare,
+        bookingId: booking.id,
+        status: booking.status,
+        availableSeats: booking.ride.availableSeats,
+        carModel: booking.ride.carModel,
+        carColor: booking.ride.carColor
+      };
+    });
+
+    res.status(200).json({
+      message: "Completed rides retrieved successfully",
+      completedRides: formattedRides
+    });
+  } catch (error) {
+    console.error("Error fetching completed rides:", error);
+    res.status(500).json({
+      message: "Failed to fetch completed rides",
+      error: error.message,
+    });
+  }
+}
