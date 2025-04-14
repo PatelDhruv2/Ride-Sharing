@@ -69,7 +69,7 @@ export const createRide = async (req, res) => {
         departureTime: departureDate,
         availableSeats,
         price,
-        status: RideStatus.PENDING
+        status: "PENDING"
       },
     });
 
@@ -87,12 +87,12 @@ export const createRide = async (req, res) => {
 
 export const getAllRides = async (req, res) => {
   try {
-    const { destination } = req.params; // Or req.query if using GET
+    const { destination } = req.query; // Or req.query if using GET
     console.log("Destination filter:", destination);
 
     const rides = await prisma.rideGiven.findMany({
       where: {
-        status: RideStatus.PENDING,
+        status: "PENDING",
         ...(destination && {
           OR: [
             {

@@ -93,12 +93,12 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-
+  //const user = JSON.parse(localStorage.getItem("user"));
   const fetchPendingRides = async () => {
     setPendingRidesLoading(true);
     setError(null);
     try {
-      const response = await axios.get("http://localhost:5000/pendingRides", {
+      const response = await axios.post("http://localhost:5000/pendingRides",{user}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
         }
@@ -122,7 +122,7 @@ export default function Dashboard() {
     setApprovedRidesLoading(true);
     setError(null);
     try {
-      const response = await axios.get("http://localhost:5000/approvedRides", {
+      const response = await axios.post("http://localhost:5000/approvedRides",{user}, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
         }
@@ -540,7 +540,7 @@ export default function Dashboard() {
               console.log("Ride:", ride); // Proper logging
 
     return (
-      <Grid item xs={12} sm={6} md={4} key={ride.ride.id}>
+      <Grid item xs={12} sm={6} md={4} key={ride.id}>
         <Card
           elevation={0}
           sx={{
@@ -573,13 +573,13 @@ export default function Dashboard() {
           </Box>
 
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            {ride.ride.startLocation} → {ride.ride.endLocation}
+            {ride.startLocation} → {ride.endLocation}
           </Typography>
 
           <Box display="flex" alignItems="center" gap={1} mb={1}>
             <AccessTime fontSize="small" color="action" />
             <Typography variant="body2" color="textSecondary">
-              {formatDate(ride.ride.departureTime)}
+              {formatDate(ride.departureTime)}
             </Typography>
           </Box>
 
@@ -593,7 +593,7 @@ export default function Dashboard() {
           <Box display="flex" alignItems="center" gap={1} mb={1}>
             <EventSeat fontSize="small" color="action" />
             <Typography variant="body2" color="textSecondary">
-              {ride.ride.availableSeats} seat{ride.ride.availableSeats !== 1 ? 's' : ''} available
+              {ride.availableSeats} seat{ride.availableSeats !== 1 ? 's' : ''} available
             </Typography>
           </Box>
 
@@ -601,7 +601,7 @@ export default function Dashboard() {
 
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" fontWeight="bold" color="primary">
-              ${ride.ride.price}
+              ${ride.price}
             </Typography>
           </Box>
         </CardContent>
@@ -638,7 +638,7 @@ export default function Dashboard() {
           ) : approvedRides.length > 0 ? (
             <Grid container spacing={3}>
               {approvedRides.map((ride) => (
-                <Grid item xs={12} sm={6} md={4} key={ride.ride.id}>
+                <Grid item xs={12} sm={6} md={4} key={ride.id}>
                   <Card
                     elevation={0}
                     sx={{
@@ -671,27 +671,27 @@ export default function Dashboard() {
                       </Box>
 
                       <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        {ride.ride.startLocation} → {ride.ride.endLocation}
+                        {ride.startLocation} → {ride.endLocation}
                       </Typography>
 
                       <Box display="flex" alignItems="center" gap={1} mb={1}>
                         <AccessTime fontSize="small" color="action" />
                         <Typography variant="body2" color="textSecondary">
-                          {formatDate(ride.ride.departureTime)}
+                          {formatDate(ride.departureTime)}
                         </Typography>
                       </Box>
 
                       <Box display="flex" alignItems="center" gap={1} mb={1}>
                         <DirectionsCar fontSize="small" color="action" />
                         <Typography variant="body2" color="textSecondary">
-                          {ride.ride.carModel || "Car"} ({ride.ride.carColor || "N/A"})
+                          {ride.carModel || "Car"} ({ride.carColor || "N/A"})
                         </Typography>
                       </Box>
 
                       <Box display="flex" alignItems="center" gap={1} mb={1}>
                         <EventSeat fontSize="small" color="action" />
                         <Typography variant="body2" color="textSecondary">
-                          {ride.ride.availableSeats} seat{ride.ride.availableSeats !== 1 ? 's' : ''} available
+                          {ride.availableSeats} seat{ride.availableSeats !== 1 ? 's' : ''} available
                         </Typography>
                       </Box>
 
@@ -699,7 +699,7 @@ export default function Dashboard() {
 
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography variant="h6" fontWeight="bold" color="primary">
-                          ${ride.ride.price}
+                          ${ride.price}
                         </Typography>
                       </Box>
                     </CardContent>

@@ -151,8 +151,9 @@ export default function DriverDashboard() {
   const handleViewApprovedRides = async () => {
     setApprovedRidesLoading(true)
     setError(null)
+    // const user = JSON.parse(localStorage.getItem('user')); 
     try {
-      const response = await axios.get("http://localhost:5000/approvedRides", {
+      const response = await axios.post("http://localhost:5000/driverApprovedRides", {user},{
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
         }
@@ -320,7 +321,7 @@ export default function DriverDashboard() {
             ) : approvedRides.length > 0 ? (
               <Grid container spacing={3}>
                 {approvedRides.map((ride) => (
-                  <Grid item xs={12} sm={6} md={4} key={ride.ride.id}>
+                  <Grid item xs={12} sm={6} md={4} key={ride.id}>
                     <Card
                       elevation={0}
                       sx={{
@@ -344,27 +345,27 @@ export default function DriverDashboard() {
                       />
                       <CardContent sx={{ pt: 2 }}>
                         <Typography variant="h6" fontWeight="bold" gutterBottom>
-                          {ride.ride.startLocation} → {ride.ride.endLocation}
+                          {ride.startLocation} → {ride.endLocation}
                         </Typography>
 
                         <Box display="flex" alignItems="center" gap={1} mb={1}>
                           <AccessTime fontSize="small" color="action" />
                           <Typography variant="body2" color="textSecondary">
-                            {formatDate(ride.ride.departureTime)}
+                            {formatDate(ride.departureTime)}
                           </Typography>
                         </Box>
 
                         <Box display="flex" alignItems="center" gap={1} mb={1}>
                           <LocationOn fontSize="small" color="action" />
                           <Typography variant="body2" color="textSecondary">
-                            {ride.ride.distance || "N/A"} km
+                            {ride.distance || "N/A"} km
                           </Typography>
                         </Box>
 
                         <Box display="flex" alignItems="center" gap={1} mb={1}>
                           <EventSeat fontSize="small" color="action" />
                           <Typography variant="body2" color="textSecondary">
-                            {ride.ride.availableSeats} seats available
+                            {ride.availableSeats} seats available
                           </Typography>
                         </Box>
 
@@ -372,9 +373,9 @@ export default function DriverDashboard() {
 
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                           <Typography variant="h6" fontWeight="bold" color="primary">
-                            ${ride.ride.price}
+                            ${ride.price}
                           </Typography>
-                          <Chip label={`${ride.ride.bookedSeats || 0} booked`} size="small" variant="outlined" color="primary" />
+                          <Chip label={`${ride.bookedSeats || 0} booked`} size="small" variant="outlined" color="primary" />
                         </Box>
                       </CardContent>
                       <CardActions sx={{ p: 2, pt: 0 }}>

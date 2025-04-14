@@ -16,7 +16,7 @@ import {
   deleteBooking
 } from '../controllers/Booking.js';
 
-import {  approveRideRequest, getDriverBookings } from '../controllers/DriverController.js';
+import {  approveRideRequest, getDriverBookings,getDriverApprovedRides } from '../controllers/DriverController.js';
 import { getApprovedRides, getPendingRequests } from '../controllers/passengerController.js';
 
 // 🔐 Auth Routes
@@ -34,9 +34,10 @@ router.get('/rides',getAllRides);
 // Driver Routes
 // router.get('/driver/rides', authenticate, getDriverRides);
 // router.post('/driver/rides/:rideId/approve', authenticate, approveRideRequest);
-router.post('/driver/bookings', authenticate, getDriverBookings);
+router.post('/driver/bookings', authenticate, getDriverBookings); //
 router.patch('/bookings/:id',authenticate,approveRideRequest);
 // router.get('/driverRides',authenticate,driverRides);
+router.post('/driverApprovedRides',authenticate,getDriverApprovedRides); //
 
 // 📦 Booking Routes
 router.post('/bookings/:rideId', createBooking);
@@ -46,7 +47,7 @@ router.put('/bookings/:id', authenticate, updateBooking);
 router.delete('/bookings/:id', authenticate, deleteBooking);
 
 /// Passenger Routes
-router.get('/pendingRides',authenticate,getPendingRequests);
-router.get('/approvedRides',authenticate , getApprovedRides);
+router.post('/pendingRides',authenticate,getPendingRequests); //
+router.post('/approvedRides',authenticate , getApprovedRides); //
 
 export default router;
