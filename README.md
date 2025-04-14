@@ -22,12 +22,14 @@ A full-stack ride-sharing platform built with:
 ```bash
 git clone https://github.com/PatelDhruv2/Ride-Sharing.git
 cd Ride-Sharing
+BACKEND SETUP
 cd backend
 npm install
 Create a .env file in the backend/ directory using the example below:
 
 npx prisma generate
 npx prisma migrate dev
+FRONTEND SETUP
 cd ../frontend
 npm install
 npm run dev
