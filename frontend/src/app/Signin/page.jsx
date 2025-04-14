@@ -67,10 +67,8 @@ const LoginPage = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          "@media (max-width: 768px)": {
-            display: "none",
-          },
         }}
+        className="left-side"
       >
         <Image
           src="/assets/login-background.jpg"
@@ -141,10 +139,8 @@ const LoginPage = () => {
           boxShadow: "-10px 0 30px rgba(0,0,0,0.05)",
           position: "relative",
           zIndex: 5,
-          "@media (max-width: 768px)": {
-            width: "100%",
-          },
         }}
+        className="right-side"
       >
         <div
           style={{
@@ -355,7 +351,7 @@ const LoginPage = () => {
             >
               Don't have an account?{" "}
               <a
-                href="#"
+                href="/register"
                 style={{
                   color: "#4f46e5",
                   textDecoration: "none",

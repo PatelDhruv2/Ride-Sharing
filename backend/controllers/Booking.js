@@ -50,7 +50,7 @@ export const createBooking = async (req, res) => {
         fare,
         Location:pickupLocation,  // Changed from pickupLocation to Location
         Time: pickupTime, // Now "Time" is a string
-        status: 'Pending',
+        status: "PENDING",
       },
       include: {
         ride: true,
@@ -129,7 +129,7 @@ export const getAllBookings = async (req, res) => {
     const bookings = await prisma.booking.findMany({
       where: {
         rideId,
-        status: 'IN_PROGRESS',
+        status: "PENDING",
       },
       include: {
         ride: true,

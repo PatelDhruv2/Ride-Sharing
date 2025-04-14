@@ -1,4 +1,5 @@
 import prisma from '../config/db.config.js';
+import { RideStatus } from '../generated/prisma/index.js';
 export const createRide = async (req, res) => {
   try {
     const {
@@ -27,6 +28,7 @@ export const createRide = async (req, res) => {
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
+    console.log(user);
     if (!user || user.role !== 'DRIVER') {
       return res.status(403).json({ message: 'User is not authorized to create a ride.' });
     }
@@ -67,7 +69,7 @@ export const createRide = async (req, res) => {
         departureTime: departureDate,
         availableSeats,
         price,
-        status: 'SCHEDULED',
+        status: RideStatus.PENDING
       },
     });
 
@@ -90,7 +92,7 @@ export const getAllRides = async (req, res) => {
 
     const rides = await prisma.rideGiven.findMany({
       where: {
-        status: 'SCHEDULED',
+        status: RideStatus.PENDING,
         ...(destination && {
           OR: [
             {

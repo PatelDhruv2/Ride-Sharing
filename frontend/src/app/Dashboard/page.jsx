@@ -22,6 +22,7 @@ import {
   LinearProgress,
   Menu,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import {
   DirectionsCar,
@@ -39,12 +40,20 @@ import {
   Star,
   History,
   Logout,
+  PendingActions,
 } from '@mui/icons-material';
 import Image from 'next/image';
+import axios from 'axios';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [pendingRides, setPendingRides] = useState([]);
+  const [showPendingRides, setShowPendingRides] = useState(false);
+  const [pendingRidesLoading, setPendingRidesLoading] = useState(false);
+  const [approvedRides, setApprovedRides] = useState([]);
+  const [showApprovedRides, setShowApprovedRides] = useState(false);
+  const [approvedRidesLoading, setApprovedRidesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('departureTime');
@@ -70,51 +79,13 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      // This would be replaced with your actual API call
-      // const response = await fetch('/api/bookings');
-      // const data = await response.json();
+      const response = await axios.get("http://localhost:5000/bookings", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
+        }
+      });
       
-      // Mock data for demonstration
-      const mockBookings = [
-        {
-          id: 1,
-          rideId: 101,
-          startLocation: 'New York',
-          endLocation: 'Boston',
-          departureTime: '2023-06-15T10:00:00',
-          price: 45,
-          status: 'active',
-          driverName: 'John Doe',
-          driverRating: 4.8,
-          seats: 1,
-        },
-        {
-          id: 2,
-          rideId: 102,
-          startLocation: 'Los Angeles',
-          endLocation: 'San Francisco',
-          departureTime: '2023-06-20T14:30:00',
-          price: 65,
-          status: 'pending',
-          driverName: 'Jane Smith',
-          driverRating: 4.5,
-          seats: 2,
-        },
-        {
-          id: 3,
-          rideId: 103,
-          startLocation: 'Chicago',
-          endLocation: 'Detroit',
-          departureTime: '2023-06-10T08:15:00',
-          price: 35,
-          status: 'completed',
-          driverName: 'Mike Johnson',
-          driverRating: 4.2,
-          seats: 1,
-        },
-      ];
-      
-      setBookings(mockBookings);
+      setBookings(response.data.bookings || []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       setError('Failed to load bookings. Please try again.');
@@ -123,14 +94,75 @@ export default function Dashboard() {
     }
   };
 
+  const fetchPendingRides = async () => {
+    setPendingRidesLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get("http://localhost:5000/pendingRides", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
+        }
+      });
+      
+      console.log("API Response:", response.data); // Debug the response
+      
+      // Use response.data.rides instead of response.data.pendingRides
+      setPendingRides(response.data.pendingRides || []);
+      
+      setShowPendingRides(true);
+    } catch (error) {
+      console.error('Error fetching pending rides:', error);
+      setError('Failed to load pending rides. Please try again.');
+    } finally {
+      setPendingRidesLoading(false);
+    }
+  };
+
+  const fetchApprovedRides = async () => {
+    setApprovedRidesLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get("http://localhost:5000/approvedRides", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
+        }
+      });
+      
+      console.log("Approved Rides API Response:", response.data);
+      
+      setApprovedRides(response.data.approvedRides || []);
+      setShowApprovedRides(true);
+      setShowPendingRides(false);
+    } catch (error) {
+      console.error('Error fetching approved rides:', error);
+      setError('Failed to load approved rides. Please try again.');
+    } finally {
+      setApprovedRidesLoading(false);
+    }
+  };
+
+  const handleShowApprovedRides = () => {
+    fetchApprovedRides();
+  };
+
+  const handleBackToBookings = () => {
+    setShowPendingRides(false);
+    setShowApprovedRides(false);
+  };
+
+  const handleShowBookings = () => {
+    setShowPendingRides(false);
+    setShowApprovedRides(false);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('jwtToken');
     localStorage.removeItem('user');
     router.push('/Signin');
   };
 
-  const handleBookRide = () => {
-    router.push('/Booking');
+  const handleBookRide = (rideId) => {
+    router.push(`/Booking/${rideId}`);
   };
 
   const handleRefresh = () => {
@@ -246,7 +278,7 @@ export default function Dashboard() {
                 color="primary"
                 size="large"
                 startIcon={<DirectionsCar />}
-                onClick={handleBookRide}
+                onClick={() => handleBookRide()}
                 sx={{
                   bgcolor: 'rgba(255,255,255,0.2)',
                   backdropFilter: 'blur(10px)',
@@ -283,9 +315,38 @@ export default function Dashboard() {
 
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h5" fontWeight="bold">
-            Your Bookings
+            {showPendingRides ? "Pending Rides" : showApprovedRides ? "Approved Rides" : "Your Bookings"}
           </Typography>
           <Box display="flex" gap={1}>
+            {showPendingRides || showApprovedRides ? (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleBackToBookings}
+                startIcon={<History />}
+              >
+                Back to Bookings
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={fetchPendingRides}
+                  startIcon={<PendingActions />}
+                >
+                  Show Pending Rides
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleShowApprovedRides}
+                  startIcon={<Star />}
+                >
+                  Show Approved Rides
+                </Button>
+              </>
+            )}
             <Tooltip title="Refresh bookings">
               <IconButton onClick={handleRefresh} color="primary" sx={{ bgcolor: 'white', boxShadow: 1 }}>
                 <Refresh />
@@ -468,116 +529,292 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {!loading && bookings.length === 0 && (
-          <Paper
-            elevation={0}
+        {showPendingRides ? (
+          pendingRidesLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+              <CircularProgress />
+            </Box>
+          ) : pendingRides.length > 0 ? (
+            <Grid container spacing={3}>
+              {pendingRides.map((ride) => {
+              console.log("Ride:", ride); // Proper logging
+
+    return (
+      <Grid item xs={12} sm={6} md={4} key={ride.ride.id}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 2,
+            overflow: 'hidden',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 20px rgba(0,0,0,0.1)',
+            },
+            position: 'relative',
+          }}
+        >
+          <Box
             sx={{
-              p: 4,
-              borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-              bgcolor: 'white',
-              textAlign: 'center',
+              height: 8,
+              width: '100%',
+              bgcolor: (theme) => theme.palette.warning.main,
             }}
-          >
-            <Typography variant="h6" color="textSecondary" gutterBottom>
-              No bookings found
+          />
+        <CardContent sx={{ pt: 2 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+            <Chip
+              label="Pending"
+              color="warning"
+              size="small"
+              sx={{ fontWeight: 'bold' }}
+            />
+          </Box>
+
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            {ride.ride.startLocation} → {ride.ride.endLocation}
+          </Typography>
+
+          <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <AccessTime fontSize="small" color="action" />
+            <Typography variant="body2" color="textSecondary">
+              {formatDate(ride.ride.departureTime)}
             </Typography>
-            <Typography variant="body2" color="textSecondary" paragraph>
-              You haven't booked any rides yet. Click the button below to find your first ride.
+          </Box>
+
+          <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <DirectionsCar fontSize="small" color="action" />
+            <Typography variant="body2" color="textSecondary">
+              {ride.carModel || "Car"} ({ride.carColor || "N/A"})
             </Typography>
-            <Button variant="contained" color="primary" onClick={handleBookRide} startIcon={<DirectionsCar />}>
-              Book a Ride
-            </Button>
-          </Paper>
-        )}
+          </Box>
 
-        <Grid container spacing={3}>
-          {sortedBookings.map((booking) => (
-            <Grid item xs={12} sm={6} md={4} key={booking.id}>
-              <Card
-                elevation={0}
-                sx={{
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 12px 20px rgba(0,0,0,0.1)',
-                  },
-                  position: 'relative',
-                }}
-              >
-                <Box
-                  sx={{
-                    height: 8,
-                    width: '100%',
-                    bgcolor: (theme) => theme.palette[getStatusColor(booking.status)].main,
-                  }}
-                />
-                <CardContent sx={{ pt: 2 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                    <Chip
-                      label={booking.status}
-                      color={getStatusColor(booking.status)}
-                      size="small"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, booking)} sx={{ mt: -1, mr: -1 }}>
-                      <MoreVert fontSize="small" />
-                    </IconButton>
-                  </Box>
+          <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <EventSeat fontSize="small" color="action" />
+            <Typography variant="body2" color="textSecondary">
+              {ride.ride.availableSeats} seat{ride.ride.availableSeats !== 1 ? 's' : ''} available
+            </Typography>
+          </Box>
 
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {booking.startLocation} → {booking.endLocation}
-                  </Typography>
+          <Divider sx={{ my: 2 }} />
 
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <AccessTime fontSize="small" color="action" />
-                    <Typography variant="body2" color="textSecondary">
-                      {formatDate(booking.departureTime)}
-                    </Typography>
-                  </Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              ${ride.ride.price}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Grid>
+  );
+})}
 
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Person fontSize="small" color="action" />
-                    <Typography variant="body2" color="textSecondary">
-                      Driver: {booking.driverName}
-                    </Typography>
-                  </Box>
-
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Star fontSize="small" color="action" />
-                    <Typography variant="body2" color="textSecondary">
-                      Driver Rating: {booking.driverRating}
-                    </Typography>
-                  </Box>
-
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <EventSeat fontSize="small" color="action" />
-                    <Typography variant="body2" color="textSecondary">
-                      {booking.seats} seat{booking.seats !== 1 ? 's' : ''} booked
-                    </Typography>
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6" fontWeight="bold" color="primary">
-                      ${booking.price}
-                    </Typography>
-                    <Chip label={`Ride #${booking.rideId}`} size="small" variant="outlined" color="primary" />
-                  </Box>
-                </CardContent>
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button size="small" variant="outlined" fullWidth>
-                    View Details
-                  </Button>
-                </CardActions>
-              </Card>
             </Grid>
-          ))}
-        </Grid>
+          ) : (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                bgcolor: 'white',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No pending rides found
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                There are no pending rides available at the moment.
+              </Typography>
+            </Paper>
+          )
+        ) : showApprovedRides ? (
+          approvedRidesLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+              <CircularProgress />
+            </Box>
+          ) : approvedRides.length > 0 ? (
+            <Grid container spacing={3}>
+              {approvedRides.map((ride) => (
+                <Grid item xs={12} sm={6} md={4} key={ride.ride.id}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 20px rgba(0,0,0,0.1)',
+                      },
+                      position: 'relative',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: 8,
+                        width: '100%',
+                        bgcolor: (theme) => theme.palette.success.main,
+                      }}
+                    />
+                    <CardContent sx={{ pt: 2 }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                        <Chip
+                          label="Approved"
+                          color="success"
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </Box>
+
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        {ride.ride.startLocation} → {ride.ride.endLocation}
+                      </Typography>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <AccessTime fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {formatDate(ride.ride.departureTime)}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <DirectionsCar fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {ride.ride.carModel || "Car"} ({ride.ride.carColor || "N/A"})
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <EventSeat fontSize="small" color="action" />
+                        <Typography variant="body2" color="textSecondary">
+                          {ride.ride.availableSeats} seat{ride.ride.availableSeats !== 1 ? 's' : ''} available
+                        </Typography>
+                      </Box>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" fontWeight="bold" color="primary">
+                          ${ride.ride.price}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                bgcolor: 'white',
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="textSecondary" gutterBottom>
+                No approved rides found
+              </Typography>
+              <Typography variant="body2" color="textSecondary" paragraph>
+                There are no approved rides available at the moment.
+              </Typography>
+            </Paper>
+          )
+        ) : (
+          <Grid container spacing={3}>
+            {sortedBookings.map((booking) => (
+              <Grid item xs={12} sm={6} md={4} key={booking.id}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 20px rgba(0,0,0,0.1)',
+                    },
+                    position: 'relative',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      height: 8,
+                      width: '100%',
+                      bgcolor: (theme) => theme.palette[getStatusColor(booking.status)].main,
+                    }}
+                  />
+                  <CardContent sx={{ pt: 2 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                      <Chip
+                        label={booking.status}
+                        color={getStatusColor(booking.status)}
+                        size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, booking)} sx={{ mt: -1, mr: -1 }}>
+                        <MoreVert fontSize="small" />
+                      </IconButton>
+                    </Box>
+
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                      {booking.startLocation} → {booking.endLocation}
+                    </Typography>
+
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <AccessTime fontSize="small" color="action" />
+                      <Typography variant="body2" color="textSecondary">
+                        {formatDate(booking.departureTime)}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Person fontSize="small" color="action" />
+                      <Typography variant="body2" color="textSecondary">
+                        Driver: {booking.driverName}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <Star fontSize="small" color="action" />
+                      <Typography variant="body2" color="textSecondary">
+                        Driver Rating: {booking.driverRating}
+                      </Typography>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <EventSeat fontSize="small" color="action" />
+                      <Typography variant="body2" color="textSecondary">
+                        {booking.seats} seat{booking.seats !== 1 ? 's' : ''} booked
+                      </Typography>
+                    </Box>
+
+                    <Divider sx={{ my: 2 }} />
+
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6" fontWeight="bold" color="primary">
+                        ${booking.price}
+                      </Typography>
+                      <Chip label={`Ride #${booking.rideId}`} size="small" variant="outlined" color="primary" />
+                    </Box>
+                  </CardContent>
+                  <CardActions sx={{ p: 2, pt: 0 }}>
+                    <Button size="small" variant="outlined" fullWidth>
+                      View Details
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
           <MenuItem onClick={handleViewDetails}>View Details</MenuItem>

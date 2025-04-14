@@ -27,13 +27,13 @@ model User {
 }
 
 model Vehicle {
-  id        String  @id @default(uuid())
-  userId    String  @unique
+  id        String @id @default(uuid())
+  userId    String @unique
   model     String
-  licenseNo String  @unique
+  licenseNo String @unique
   color     String
   capacity  Int
-  user      User    @relation(fields: [userId], references: [id])
+  user      User   @relation(fields: [userId], references: [id])
 }
 
 model RideGiven {
@@ -41,28 +41,27 @@ model RideGiven {
   driverId       String
   startLocation  String
   endLocation    String
-  route          String     // <-- added route field
   departureTime  DateTime
   availableSeats Int
   price          Float
   status         RideStatus
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+  route          String
   bookings       Booking[]
   driver         User       @relation("DriverRides", fields: [driverId], references: [id])
 }
-
 
 model Booking {
   id          String     @id @default(uuid())
   rideId      String
   passengerId String
   fare        Float
-  Time        String
-  Location String
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   status      RideStatus
+  Time        String
+  Location    String
   baggage     Baggage?
   passenger   User       @relation("PassengerBookings", fields: [passengerId], references: [id])
   ride        RideGiven  @relation(fields: [rideId], references: [id])
@@ -77,11 +76,11 @@ model Baggage {
 }
 
 model DriverVerification {
-  id          String   @id @default(uuid())
-  userId      String   @unique
+  id             String   @id @default(uuid())
+  userId         String   @unique
   documentNumber String
-  uploadedAt  DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  uploadedAt     DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
 }
 
 model Location {
@@ -109,10 +108,11 @@ model Notification {
 }
 
 enum RideStatus {
-  SCHEDULED
-  BOOKED
   IN_PROGRESS
   COMPLETED
+  ACCEPTED
+  REJECTED
+  PENDING
   CANCELLED
 }
 
@@ -120,4 +120,4 @@ enum UserRole {
   PASSENGER
   DRIVER
   ADMIN
-}// No modifications can be made without a selection.
+}

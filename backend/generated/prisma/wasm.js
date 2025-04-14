@@ -143,13 +143,13 @@ exports.Prisma.RideGivenScalarFieldEnum = {
   driverId: 'driverId',
   startLocation: 'startLocation',
   endLocation: 'endLocation',
-  route: 'route',
   departureTime: 'departureTime',
   availableSeats: 'availableSeats',
   price: 'price',
   status: 'status',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  route: 'route'
 };
 
 exports.Prisma.BookingScalarFieldEnum = {
@@ -157,11 +157,11 @@ exports.Prisma.BookingScalarFieldEnum = {
   rideId: 'rideId',
   passengerId: 'passengerId',
   fare: 'fare',
-  Time: 'Time',
-  Location: 'Location',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  status: 'status'
+  status: 'status',
+  Time: 'Time',
+  Location: 'Location'
 };
 
 exports.Prisma.BaggageScalarFieldEnum = {
@@ -221,10 +221,11 @@ exports.UserRole = exports.$Enums.UserRole = {
 };
 
 exports.RideStatus = exports.$Enums.RideStatus = {
-  SCHEDULED: 'SCHEDULED',
-  BOOKED: 'BOOKED',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  PENDING: 'PENDING',
   CANCELLED: 'CANCELLED'
 };
 

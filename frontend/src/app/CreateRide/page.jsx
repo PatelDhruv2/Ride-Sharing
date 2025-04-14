@@ -21,7 +21,9 @@ const CreateRide = () => {
 
   // Use useEffect to retrieve userId from localStorage on component mount
   useEffect(() => {
-    const userId = localStorage.getItem('user.id');
+    // const userId = localStorage.getItem('user.id');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const userId = user.id;
     if (userId) {
       setFormData((prevData) => ({
         ...prevData,
